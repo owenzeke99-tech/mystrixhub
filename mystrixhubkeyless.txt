@@ -1,0 +1,262 @@
+-- Mystrix Hub - Modern Key System UI (Link4m, 24h Auto-Save, Hidden 24h Text)
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+-- Tên file lưu trạng thái key trong thư mục của executor (nếu executor hỗ trợ)
+local SAVE_FILE_NAME = "MystrixHub_KeyData.json"
+local CORRECT_KEY = "MysticHubKeyHso - Hsiosownsosososjdjd"
+local KEY_LINK = "https://link4m.org/4XXX3iqi"
+
+-- Hàm kiểm tra xem đã lưu key và còn hạn 24h hay không
+local function hasValidSavedKey()
+	local success, result = pcall(function()
+		if readfile and isfile and isfile(SAVE_FILE_NAME) then
+			local content = readfile(SAVE_FILE_NAME)
+			local data = HttpService:JSONDecode(content)
+			-- Kiểm tra thời gian hiện tại so với lúc lưu (24 giờ = 86400 giây)
+			if data and data.Key == CORRECT_KEY and (os.time() - data.Time) < 86400 then
+				return true
+			end
+		end
+	end)
+	return success and result
+end
+
+-- Hàm lưu key kèm thời gian hiện tại
+local function saveKeyData()
+	pcall(function()
+		if writefile then
+			local data = {
+				Key = CORRECT_KEY,
+				Time = os.time()
+			}
+			writefile(SAVE_FILE_NAME, HttpService:JSONEncode(data))
+		end
+	end)
+end
+
+-- Hàm tải script chính của bạn
+local function loadMainScript()
+	local success, err = pcall(function()
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/loader"))()
+	end)
+	if not success then
+		warn("Error loading main script: " .. tostring(err))
+	end
+end
+
+-- Nếu đã có key hợp lệ trong 24h, tự động load script luôn mà không hiện Menu
+if hasValidSavedKey() then
+	loadMainScript()
+	return
+end
+
+-- Xóa giao diện cũ nếu có để tránh bị trùng
+if CoreGui:FindFirstChild("MystrixHubKeySystem") then
+	CoreGui.MystrixHubKeySystem:Destroy()
+end
+if PlayerGui:FindFirstChild("MystrixHubKeySystem") then
+	PlayerGui.MystrixHubKeySystem:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "MystrixHubKeySystem"
+local successParent, _ = pcall(function()
+	ScreenGui.Parent = CoreGui
+end)
+if not successParent then
+	ScreenGui.Parent = PlayerGui
+end
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Khung chính
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 420, 0, 260)
+MainFrame.Position = UDim2.new(0.5, -210, 0.5, -130)
+MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 14)
+MainCorner.Parent = MainFrame
+
+-- Viền sáng màu đỏ tươi
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(230, 40, 70)
+UIStroke.Thickness = 2
+UIStroke.Transparency = 0.2
+UIStroke.Parent = MainFrame
+
+-- Tiêu đề (Mystrix Hub)
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 60)
+Title.BackgroundTransparency = 1
+Title.Text = "MYSTRIX HUB"
+Title.TextColor3 = Color3.fromRGB(255, 60, 90)
+Title.TextSize = 26
+Title.Font = Enum.Font.FredokaOne
+Title.Parent = MainFrame
+
+-- Phụ đề tiếng Anh (Không lộ thông tin 24h)
+local Subtitle = Instance.new("TextLabel")
+Subtitle.Size = UDim2.new(1, 0, 0, 20)
+Subtitle.Position = UDim2.new(0, 0, 0, 50)
+Subtitle.BackgroundTransparency = 1
+Subtitle.Text = "Secure Key Authentication System"
+Subtitle.TextColor3 = Color3.fromRGB(160, 160, 160)
+Subtitle.TextSize = 13
+Subtitle.Font = Enum.Font.Gotham
+Subtitle.Parent = MainFrame
+
+-- Ô nhập Key
+local TextBox = Instance.new("TextBox")
+TextBox.Size = UDim2.new(0.85, 0, 0, 50)
+TextBox.Position = UDim2.new(0.075, 0, 0.35, 0)
+TextBox.PlaceholderText = "Enter your key here..."
+TextBox.Text = ""
+TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextBox.PlaceholderColor3 = Color3.fromRGB(110, 110, 110)
+TextBox.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+TextBox.TextSize = 15
+TextBox.Font = Enum.Font.GothamMedium
+TextBox.ClearTextOnFocus = false
+TextBox.Parent = MainFrame
+
+local BoxCorner = Instance.new("UICorner")
+BoxCorner.CornerRadius = UDim.new(0, 10)
+BoxCorner.Parent = TextBox
+
+local BoxStroke = Instance.new("UIStroke")
+BoxStroke.Color = Color3.fromRGB(60, 60, 60)
+BoxStroke.Thickness = 1
+BoxStroke.Parent = TextBox
+
+-- Container chứa 2 nút
+local ButtonContainer = Instance.new("Frame")
+ButtonContainer.Size = UDim2.new(0.85, 0, 0, 46)
+ButtonContainer.Position = UDim2.new(0.075, 0, 0.61, 0)
+ButtonContainer.BackgroundTransparency = 1
+ButtonContainer.Parent = MainFrame
+
+-- Nút Xác nhận (Verify)
+local SubmitBtn = Instance.new("TextButton")
+SubmitBtn.Size = UDim2.new(0.48, 0, 1, 0)
+SubmitBtn.Position = UDim2.new(0, 0, 0, 0)
+SubmitBtn.BackgroundColor3 = Color3.fromRGB(220, 35, 65)
+SubmitBtn.Text = "VERIFY"
+SubmitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SubmitBtn.TextSize = 15
+SubmitBtn.Font = Enum.Font.GothamBold
+SubmitBtn.AutoButtonColor = false
+SubmitBtn.Parent = ButtonContainer
+
+local SubmitCorner = Instance.new("UICorner")
+SubmitCorner.CornerRadius = UDim.new(0, 10)
+SubmitCorner.Parent = SubmitBtn
+
+-- Nút Lấy Key (Get Key)
+local GetKeyBtn = Instance.new("TextButton")
+GetKeyBtn.Size = UDim2.new(0.48, 0, 1, 0)
+GetKeyBtn.Position = UDim2.new(0.52, 0, 0, 0)
+GetKeyBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+GetKeyBtn.Text = "GET KEY"
+GetKeyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+GetKeyBtn.TextSize = 15
+GetKeyBtn.Font = Enum.Font.GothamBold
+GetKeyBtn.AutoButtonColor = false
+GetKeyBtn.Parent = ButtonContainer
+
+local GetKeyCorner = Instance.new("UICorner")
+GetKeyCorner.CornerRadius = UDim.new(0, 10)
+GetKeyCorner.Parent = GetKeyBtn
+
+local GetKeyStroke = Instance.new("UIStroke")
+GetKeyStroke.Color = Color3.fromRGB(220, 35, 65)
+GetKeyStroke.Thickness = 1
+GetKeyStroke.Parent = GetKeyBtn
+
+-- Hiệu ứng hover mượt mà
+SubmitBtn.MouseEnter:Connect(function()
+	SubmitBtn.BackgroundColor3 = Color3.fromRGB(250, 45, 80)
+end)
+SubmitBtn.MouseLeave:Connect(function()
+	SubmitBtn.BackgroundColor3 = Color3.fromRGB(220, 35, 65)
+end)
+
+GetKeyBtn.MouseEnter:Connect(function()
+	GetKeyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+end)
+GetKeyBtn.MouseLeave:Connect(function()
+	GetKeyBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+end)
+
+-- Thông báo trạng thái
+local ErrorLabel = Instance.new("TextLabel")
+ErrorLabel.Size = UDim2.new(1, 0, 0, 20)
+ErrorLabel.Position = UDim2.new(0, 0, 0.84, 0)
+ErrorLabel.BackgroundTransparency = 1
+ErrorLabel.Text = ""
+ErrorLabel.TextColor3 = Color3.fromRGB(255, 70, 70)
+ErrorLabel.TextSize = 13
+ErrorLabel.Font = Enum.Font.GothamMedium
+ErrorLabel.Parent = MainFrame
+
+-- Sự kiện nhấn nút "Get Key"
+GetKeyBtn.MouseButton1Click:Connect(function()
+	setclipboard(KEY_LINK)
+	ErrorLabel.Text = "Key link copied to clipboard!"
+	ErrorLabel.TextColor3 = Color3.fromRGB(80, 200, 255)
+end)
+
+-- Hàm tạo hiệu ứng lắc mượt mà bằng TweenService
+local function smoothShake()
+	local originalPos = UDim2.new(0.5, -210, 0.5, -130)
+	local shakeIntensity = 12
+	
+	for i = 1, 3 do
+		local t1 = TweenService:Create(MainFrame, TweenInfo.new(0.04), {Position = originalPos + UDim2.new(0, shakeIntensity, 0, 0)})
+		t1:Play()
+		t1.Completed:Wait()
+		
+		local t2 = TweenService:Create(MainFrame, TweenInfo.new(0.04), {Position = originalPos - UDim2.new(0, shakeIntensity, 0, 0)})
+		t2:Play()
+		t2.Completed:Wait()
+		
+		shakeIntensity = shakeIntensity * 0.6
+	end
+	
+	local resetTween = TweenService:Create(MainFrame, TweenInfo.new(0.05), {Position = originalPos})
+	resetTween:Play()
+end
+
+-- Logic kiểm tra mật khẩu
+SubmitBtn.MouseButton1Click:Connect(function()
+	if TextBox.Text == CORRECT_KEY then
+		ErrorLabel.Text = "Success! Loading script..."
+		ErrorLabel.TextColor3 = Color3.fromRGB(60, 255, 120)
+		
+		-- Lưu lại trạng thái key hợp lệ để dùng trong 24h tới
+		saveKeyData()
+		
+		task.wait(0.8)
+		ScreenGui:Destroy()
+		
+		-- Tải script chính
+		loadMainScript()
+	else
+		ErrorLabel.Text = "Incorrect key! Please try again."
+		ErrorLabel.TextColor3 = Color3.fromRGB(255, 60, 70)
+		
+		-- Tự động xóa chữ khi nhập sai
+		TextBox.Text = ""
+		
+		-- Chạy hiệu ứng lắc mượt
+		smoothShake()
+	end
+end)
